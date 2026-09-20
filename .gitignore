@@ -1,0 +1,36 @@
+# Python, environments and tooling
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+*.egg-info/
+build/
+dist/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets and temporary files (examples remain versioned)
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.bak
+*~
+
+# Local datasets and reproducible outputs; do not ignore all CSVs globally
+/data/
+/outputs/
+/dataset_pk99/data/
+/dataset_generated/customers.csv
+/dataset_generated/transactions.csv
+/dataset_generated/data/

@@ -1,0 +1,152 @@
+{
+  "created_at_utc": "2026-09-20T19:59:58.440983+00:00",
+  "config": {
+    "history_days": [
+      90,
+      180,
+      365
+    ],
+    "horizons": [
+      90,
+      120,
+      180
+    ],
+    "thresholds": [
+      90,
+      120,
+      180
+    ],
+    "min_transactions": [
+      1,
+      5
+    ],
+    "snapshot_freq": "ME",
+    "snapshot_dates": [],
+    "snapshot_start": null,
+    "snapshot_end": null,
+    "max_recency_days": null,
+    "reactivation_days": 180,
+    "scopes": [
+      "all_transactions",
+      "excluding_routine"
+    ]
+  },
+  "snapshot_dates": [
+    "1993-01-31",
+    "1993-02-28",
+    "1993-03-31",
+    "1993-04-30",
+    "1993-05-31",
+    "1993-06-30",
+    "1993-07-31",
+    "1993-08-31",
+    "1993-09-30",
+    "1993-10-31",
+    "1993-11-30",
+    "1993-12-31",
+    "1994-01-31",
+    "1994-02-28",
+    "1994-03-31",
+    "1994-04-30",
+    "1994-05-31",
+    "1994-06-30",
+    "1994-07-31",
+    "1994-08-31",
+    "1994-09-30",
+    "1994-10-31",
+    "1994-11-30",
+    "1994-12-31",
+    "1995-01-31",
+    "1995-02-28",
+    "1995-03-31",
+    "1995-04-30",
+    "1995-05-31",
+    "1995-06-30",
+    "1995-07-31",
+    "1995-08-31",
+    "1995-09-30",
+    "1995-10-31",
+    "1995-11-30",
+    "1995-12-31",
+    "1996-01-31",
+    "1996-02-29",
+    "1996-03-31",
+    "1996-04-30",
+    "1996-05-31",
+    "1996-06-30",
+    "1996-07-31",
+    "1996-08-31",
+    "1996-09-30",
+    "1996-10-31",
+    "1996-11-30",
+    "1996-12-31",
+    "1997-01-31",
+    "1997-02-28",
+    "1997-03-31",
+    "1997-04-30",
+    "1997-05-31",
+    "1997-06-30",
+    "1997-07-31",
+    "1997-08-31",
+    "1997-09-30",
+    "1997-10-31",
+    "1997-11-30",
+    "1997-12-31",
+    "1998-01-31",
+    "1998-02-28",
+    "1998-03-31",
+    "1998-04-30",
+    "1998-05-31",
+    "1998-06-30",
+    "1998-07-31",
+    "1998-08-31",
+    "1998-09-30",
+    "1998-10-31",
+    "1998-11-30",
+    "1998-12-31"
+  ],
+  "data_quality": {
+    "accounts": 4500,
+    "transactions": 1056320,
+    "owner_links": 4500,
+    "accounts_without_owner": 0,
+    "owners_with_multiple_accounts": 0,
+    "accounts_without_transactions": 0,
+    "duplicate_account_dates": 241552,
+    "observation_start": "1993-01-01",
+    "observation_end": "1998-12-31"
+  },
+  "data_provenance": {
+    "cache_version": 1,
+    "extracted_at_utc": "2026-09-20T19:51:00.448346+00:00",
+    "host": "relational.fel.cvut.cz",
+    "database": "financial",
+    "queries": {
+      "accounts": "SELECT account_id, date AS opened_at FROM account ORDER BY account_id",
+      "owners": "SELECT account_id, client_id FROM disp\n                 WHERE type = 'OWNER' ORDER BY account_id",
+      "transactions": "SELECT trans_id, account_id, date AS trans_date,\n                            type, operation, k_symbol\n                       FROM trans ORDER BY account_id, date, trans_id"
+    },
+    "rows": {
+      "accounts": 4500,
+      "owners": 4500,
+      "transactions": 1056320
+    },
+    "sha256": {
+      "accounts": "c9aba478ba4aefa6efa97647cef88dd6c5f591e53620c41319f9c5e0d40791ab",
+      "owners": "c91086bf1dc5643ae9defa35cd7e7eb8bcb7eac59352672245a704600f65b02e",
+      "transactions": "69ffee0df522c9c20a6198b9c2faf3a0856f0b7849cdfea98437c5241a655e37"
+    }
+  },
+  "excluded_routine_symbols": [
+    "UROK",
+    "SLUZBY",
+    "SANKC. UROK"
+  ],
+  "python": "3.14.4",
+  "packages": {
+    "numpy": "2.4.4",
+    "pandas": "3.0.2",
+    "matplotlib": "3.10.9",
+    "mysql-connector-python": "26.7.0"
+  }
+}

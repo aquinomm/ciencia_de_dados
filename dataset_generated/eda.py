@@ -1,13 +1,16 @@
 # i generated data using seed 1234, 6k customers and from 01-01-25 to 01-01-26
 # i then concatenated all transaction data into one single csv
 # get files from the drive
+from pathlib import Path
+
 import pandas as pd
 
 
 
 # get last date per customer
-df_transactions = pd.read_csv('./dataset_generated/transactions.csv')
-df_customers = pd.read_csv('./dataset_generated/customers.csv', sep="|")
+data_dir = Path(__file__).resolve().parent
+df_transactions = pd.read_csv(data_dir / 'transactions.csv')
+df_customers = pd.read_csv(data_dir / 'customers.csv', sep="|")
 
 df_transactions['trans_date'] = pd.to_datetime(df_transactions['trans_date'])
 
@@ -27,5 +30,5 @@ tx_churn = df_customers['flag_churn'].mean()
 qtd_churn = df_customers['flag_churn'].sum()
 qtd_clientes = df_customers['flag_churn'].count()
 
-print(f'{qtd_churn} de {qtd_clientes} clientes em churn, ou {tx_churn*100:.2f}%')
-# 600 de 6000 clientes em churn, ou 10.00%
+print(f'{qtd_churn} de {qtd_clientes} clientes com inatividade > 90 dias '
+      f'(proxy exploratória, sem confirmação de churn), ou {tx_churn*100:.2f}%')
