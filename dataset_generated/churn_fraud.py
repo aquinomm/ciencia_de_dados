@@ -2,14 +2,21 @@
 # i then concatenated all transaction data into one single csv
 # get files from the drive
 import pandas as pd
-
+import numpy as np
 
 
 # get last date per customer
 df_transactions = pd.read_csv('./dataset_generated/transactions.csv')
 df_customers = pd.read_csv('./dataset_generated/customers.csv', sep="|")
 
+
+orig = df_transactions.shape[0]
 df_transactions['trans_date'] = pd.to_datetime(df_transactions['trans_date'])
+fraud_rows = df_transactions[df_transactions['is_fraud'] == 1].index
+df_transactions.drop(fraud_rows, inplace=True)
+print(f'from {orig} to {df_transactions.shape[0]}, dropped {orig - df_transactions.shape[0]}')
+
+df_transactions.to_csv('trx_nofraud.csv')
 
 df_last_transaction = df_transactions.groupby('acct_num')['trans_date'].max().reset_index()
 df_last_transaction.rename(columns={'trans_date':'last_trans_date'}, inplace=True)
@@ -20,7 +27,10 @@ last_date = df_transactions['trans_date'].max()
 # churners
 df_customers = df_customers.merge(df_last_transaction[['acct_num', 'last_trans_date']], on='acct_num')
 df_customers['days_inactive'] = (last_date - df_customers['last_trans_date']).dt.days
-df_customers['flag_churn'] = df_customers['days_inactive'].apply(lambda x: 1 if x > 90 else 0)
+df_customers['days_inactive'] = df_customers['days_inactive'].fillna(365)
+df_customers['flag_churn'] = df_customers['days_inactive'].apply(lambda x: 1 if x > 90 or np.isnan(x) else 0)
+
+df_customers.to_csv('./dataset_generated/customers_inactivity.csv', index=False)
 
 # taxa de churn
 tx_churn = df_customers['flag_churn'].mean()
@@ -28,4 +38,7 @@ qtd_churn = df_customers['flag_churn'].sum()
 qtd_clientes = df_customers['flag_churn'].count()
 
 print(f'{qtd_churn} de {qtd_clientes} clientes em churn, ou {tx_churn*100:.2f}%')
-# 600 de 6000 clientes em churn, ou 10.00%
+
+
+
+
