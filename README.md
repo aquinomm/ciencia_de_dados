@@ -1,17 +1,19 @@
 # Ciência de Dados — exploração de dados bancários
 
-Projeto acadêmico em grupo para formular uma pergunta de análise de dados, estudar a qualidade e a adequação das bases e discutir a viabilidade com o mentor. O trabalho está em **fase exploratória**: ainda não foram definidos o dataset nem o problema final. Churn, fraude e outros problemas descritivos ou preditivos continuam em aberto.
+Projeto acadêmico em grupo para estudar dados bancários e discutir a viabilidade com o mentor. **A exploração do Berka com dormancy/churn como alvo preditivo principal está encerrada nesta branch, `berka-temporal`.** Os experimentos não ofereceram suporte suficiente para manter essa direção como eixo preditivo principal do projeto: poucos eventos em contas distintas, incerteza elevada e desempenho sem estabilidade temporal suficiente.
 
-A análise atual do Berka investiga comportamento transacional e possíveis definições temporais de inatividade. **Não há rótulo explícito de churn no Berka.** Uma proxy derivada de transações não é ground truth de encerramento da relação bancária. Resultados exploratórios não devem ser apresentados como conclusões finais sobre clientes ou sobre o projeto.
+**Não há rótulo explícito de churn no Berka.** Os experimentos avaliaram inatividade comportamental observada, incluindo a transição de contas ativas para ausência futura de atividade; não demonstram encerramento da relação bancária. Os resultados elevados na população geral refletiam, em grande parte, persistência de inatividade já em andamento. A [avaliação prospectiva de transição](docs/berka_activity_transition.md) documenta por que o sinal restante não sustenta essa aplicação como resultado preditivo principal.
+
+Esse encerramento **não invalida o Berka como dataset**. Caso ele seja mantido, o próximo passo será mudar o pivô para um fenômeno efetivamente observado nos dados, como empréstimos/default, ou outro alvo diretamente sustentado pela base. **Essa mudança ainda não é uma decisão final do projeto**: é uma direção condicional decorrente da conclusão desta branch. Nenhum novo alvo foi implementado. Código, testes, resultados e documentação da investigação permanecem preservados para consulta e reprodução.
 
 ## Bases consideradas
 
 | Alternativa | Natureza e origem | Situação no projeto |
 | --- | --- | --- |
-| PKDD'99 / Berka Financial Dataset | Dataset bancário real, anonimizado e relacional; extraído do banco `financial` do [CTU Relational Repository](https://relational.fel.cvut.cz/dataset/Financial). | EDA por conta, com histórico completo, gaps e snapshots temporais. A ausência de churn observado limita essa aplicação. |
+| PKDD'99 / Berka Financial Dataset | Dataset bancário real, anonimizado e relacional; extraído do banco `financial` do [CTU Relational Repository](https://relational.fel.cvut.cz/dataset/Financial). | Investigação de dormancy/churn encerrada como eixo preditivo principal. O dataset continua sendo uma possibilidade para outro alvo; sua permanência não foi decidida. |
 | Sparkov / dados sintéticos | O [Sparkov Data Generation](https://github.com/namebrandon/Sparkov_Data_Generation) gera transações sintéticas, incluindo fraude simulada. | Alternativa para estudo. O rascunho local não foi redesenhado nem os dados ajustados para imitar o Berka. A proveniência exata da geração local ainda precisa ser documentada. |
 
-A estrutura relacional do Berka inclui contas, clientes, disposições, transações, ordens, empréstimos, cartões e distritos. A EDA atual extrai somente `account`, `trans` e os vínculos `OWNER` de `disp`. `DISPONENT` não vira uma segunda observação da conta. Não é necessário juntar todas as tabelas para responder à pergunta atual.
+A estrutura relacional do Berka inclui contas, clientes, disposições, transações, ordens, empréstimos, cartões e distritos. A EDA registrada extrai somente `account`, `trans` e os vínculos `OWNER` de `disp`. `DISPONENT` não vira uma segunda observação da conta. Esse recorte atende à pergunta de inatividade investigada nesta branch.
 
 ## Estrutura
 
@@ -23,15 +25,25 @@ requirements.txt
 dataset_pk99/
   data.py                      # consultas SQL, conexão e cache verificável
   eda.py                       # EDA temporal e interface de linha de comando
+  predict_inactivity.py        # execução da previsão temporal em CPU
+  inactivity_features.py      # features disponíveis em T e targets futuros
+  inactivity_evaluation.py    # purge, seleção, métricas e bootstrap por conta
+  audit_inactivity.py         # auditoria de execução congelada, sem retreinamento
+  activity_transition.py     # população ativa e contagem de episódios distintos
+  predict_activity_transition.py # experimento prospectivo registrado; exige berka-temporal
 dataset_generated/
   eda.py                       # rascunho sintético; lógica analítica preservada
   customers.csv                # local, não versionado
   transactions.csv             # local, não versionado
 docs/
   berka_eda.md                  # evidências revisadas e perguntas para o mentor
+  berka_inactivity_prediction.md # metodologia, resultados e limitações da previsão
+  berka_activity_transition.md # experimento ativo → inativo e conclusão de viabilidade
   berka_reference_manifest.json # parâmetros, versões e hashes da execução registrada
 tests/
   test_berka_temporal.py        # testes pequenos de limites temporais e censura
+  test_inactivity_prediction.py # leakage, seleção e incerteza agrupada
+  test_activity_transition.py # elegibilidade prospectiva, episódios e isolamento
 data/berka/                    # cache de extração; não versionado
 outputs/berka/                 # CSVs, gráficos e relatórios gerados; não versionados
 ```
@@ -48,7 +60,7 @@ python -m venv .venv
 
 Se não quiser ativar o ambiente, substitua `python` nos comandos abaixo por `.\.venv\Scripts\python.exe`. Em Linux/macOS, use `.venv/bin/python` e, opcionalmente, `source .venv/bin/activate`.
 
-Dependências diretas: pandas (tabelas e datas), NumPy (busca vetorizada no histórico), mysql-connector-python (extração SQL) e Matplotlib (gráficos estáticos). Matplotlib foi adicionado para visualizar caudas dos gaps e evolução temporal. Faker foi removido porque este repositório não executa um gerador; python-dateutil e six não são usados diretamente e dependências transitivas ficam a cargo do instalador. As versões diretas estão fixadas no `requirements.txt`; o manifesto registra o ambiente executado.
+Dependências diretas: pandas, NumPy, mysql-connector-python, Matplotlib, scikit-learn, joblib e threadpoolctl. As versões estão fixadas em `requirements.txt`; os manifestos registram o ambiente. Os experimentos são executáveis em CPU, sem CUDA.
 
 ## Executar o Berka
 
@@ -98,7 +110,7 @@ O limite global de observação é uma hipótese de cobertura administrativa: a 
 
 ### Outputs e interpretação
 
-Cada execução gera `report.txt`, `run_manifest.json`, `transaction_composition.csv`, `monthly_coverage.csv`, `gap_summary.csv` e `target_summary.csv`. Cada escopo também contém:
+Cada execução gera `run_manifest.json`, `transaction_composition.csv`, `monthly_coverage.csv`, `gap_summary.csv` e `target_summary.csv`. A interpretação está em `docs/berka_eda.md`; o código não gera narrativa analítica. Cada escopo também contém:
 
 | Arquivo | Uso |
 | --- | --- |
@@ -115,7 +127,42 @@ Um gap encerrado mede a diferença entre datas de dias ativos consecutivos; no e
 
 Gaps encerrados sempre apresentam retorno por construção. As taxas de retorno observadas incluem também episódios terminais e **não são probabilidades de retorno definitivo**. Para reduzir diferenças de tempo de acompanhamento, também são calculados retornos em 180 dias após `início_do_gap + threshold`, só quando essa janela está completa. Para snapshots positivos, o acompanhamento fixo começa em `T + H`. Os denominadores constam dos CSVs; ausência de denominador produz valor ausente, não taxa zero.
 
-Uma conta pode aparecer em múltiplos snapshots com janelas sobrepostas. As observações **não são independentes**. Uma futura avaliação deverá respeitar conta e temporalidade, impedir compartilhamento de contas entre os conjuntos conforme o desenho escolhido e purgar janelas de rótulo que atravessem o corte. Não fazer divisão aleatória de linhas. Contagens por conta e sequências positivas ajudam a não confundir snapshots repetidos com novos eventos.
+Uma conta pode aparecer em múltiplos snapshots com janelas sobrepostas. As observações **não são independentes**. A previsão implementada permite a mesma conta em períodos diferentes, pois avalia generalização temporal, e purga janelas de rótulo que atravessem o corte. A incerteza usa bootstrap por conta. Não há divisão aleatória de linhas.
+
+## Registro do experimento: transição ativo → inativo
+
+As instruções abaixo preservam a reprodução da investigação encerrada. Para reproduzir esse experimento, utilize a branch `berka-temporal`. O programa verifica a branch e recusa executar em outra; não faz checkout, commit ou push.
+
+```powershell
+python -X utf8 -m dataset_pk99.predict_activity_transition --source cache --output-dir outputs/berka/activity_transition/reproduction
+python -X utf8 -m unittest discover -s tests -v
+```
+
+Sem o cache financeiro `data/berka_prediction/`, use `--source database` na primeira execução. Leia [metodologia, auditoria de episódios e resultados](docs/berka_activity_transition.md).
+
+A população principal exige `recency_days <= 30` **antes dos targets e de todos os splits/ajustes**. Sensibilidades: 15/60 dias de atividade recente e H=120/180, com H=90 principal; ambas as definições de atividade são mantidas. Snapshots mensais, histórico mínimo 180 dias, validação nominal em 1997 e TEST em 1998, com purge por H. Datas não são deslocadas para esconder treinos sem positivos. Modelos indisponíveis por treino de classe única são sinalizados explicitamente.
+
+Há três baselines (prevalência, recência, frequência recente), logística e HistGradientBoosting; AP seleciona na validação e F2 define o threshold. Os arquivos incluem snapshots positivos, episódios desduplicados, contas positivas, contagens mensais, gaps não capturados pelo calendário, ICs por conta e cortes temporais anteriores. `--previous-run outputs/berka/inactivity_prediction/validated` acrescenta uma comparação diagnóstica após o TEST; nenhum modelo anterior é reutilizado.
+
+Parâmetros: `--active-windows 30 15 60`, `--horizons 90 120 180`, `--snapshot-freq ME`, `--history-days 180`, `--bootstrap-repetitions 1000`, `--seed 20260921`, `--threads 4`; consulte `--help`. A saída de cada execução deve ser uma pasta vazia.
+
+## Experimento anterior: inatividade futura na população geral
+
+Consulte [metodologia e resultados](docs/berka_inactivity_prediction.md). A primeira extração precisa incluir `amount` e `balance`, em cache separado e verificável:
+
+```powershell
+python -X utf8 -m dataset_pk99.predict_inactivity --source database
+python -X utf8 -m dataset_pk99.predict_inactivity --source cache
+python -X utf8 -m dataset_pk99.predict_inactivity --help
+```
+
+O primeiro comando também executa a análise; os demais reaproveitam o cache `data/berka_prediction/`. Os resultados ficam em `outputs/berka/inactivity_prediction/<execução>/`. O cache anterior da EDA continua compatível. A previsão requer também scikit-learn, joblib e threadpoolctl, fixados nos requisitos; não exige GPU.
+
+Padrões: snapshots mensais (`ME`), histórico observável mínimo de 180 dias, ao menos uma atividade histórica, horizontes 90/120/180 dias e ambas as definições de atividade. Validação começa em 1997-04-01 e TEST em 1998-01-01, com purge específico para H. Features, hiperparâmetros e thresholds são congelados antes da avaliação final. A seleção usa AP na validação; thresholds usam F2 na validação. Há dois cortes anteriores ao TEST e 1.000 réplicas de bootstrap por conta, seed 20260920. Não há SMOTE nem pesos de classe.
+
+As opções `--snapshot-freq`, `--history-days`, `--min-transactions`, `--horizons`, `--scopes`, `--validation-start`, `--test-start`, `--bootstrap-repetitions`, `--threads` e `--seed` permitem reproduzir outras configurações. `--no-stability` desativa os cortes adicionais. `--output-dir` deve apontar para uma pasta vazia. Os CSVs contêm métricas, splits, perdas por elegibilidade, previsões e intervalos; os JSONs registram configuração, candidatos, thresholds, hashes e versões. Curvas PR/ROC e calibração são salvas em PNG.
+
+Para repetir também a auditoria de leakage com dados reais e os ICs da coorte recentemente ativa, execute `python -X utf8 -m dataset_pk99.audit_inactivity --output-dir outputs/berka/inactivity_prediction/<execução>`. Esse comando verifica os artefatos congelados e reproduz previsões; não treina nem seleciona modelos.
 
 ## Análise sintética existente
 
@@ -138,6 +185,8 @@ python -X utf8 -m unittest discover -s tests -v
 
 Os testes verificam fronteiras em T/T+H, exclusão de futuro incompleto, invariância das features a alterações futuras, elegibilidade, integridade de vínculos e censura/reativação.
 
-## Decisões em aberto
+## Conclusão da branch e direção ainda em aberto
 
-Veja [evidências e questões para o mentor](docs/berka_eda.md). Ainda precisamos decidir o dataset, a pergunta, o que conta como atividade, a população em risco, H, histórico mínimo, protocolo temporal e critérios de suficiência de exemplos. Se inatividade não for conceitualmente defensável ou tiver poucas contas/eventos, devemos considerar outra pergunta no Berka ou outra base. Não há modelagem, balanceamento, geração artificial de positivos ou tuning nesta etapa.
+As [evidências da EDA](docs/berka_eda.md), o [experimento na população geral](docs/berka_inactivity_prediction.md) e a [avaliação de transição](docs/berka_activity_transition.md) fundamentam o encerramento de dormancy/churn como alvo preditivo principal no Berka. A conclusão preserva o valor da investigação, mas não recomenda manter essa linha como eixo preditivo do projeto.
+
+A escolha final do dataset e do problema permanece em aberto para discussão do grupo com o mentor. Se o Berka for mantido, será necessário avaliar um alvo diretamente observado, como empréstimos/default, incluindo sua definição e viabilidade. Essa possibilidade não representa um alvo já escolhido, validado ou implementado; o fechamento aqui se limita à conclusão desta branch.

@@ -27,14 +27,19 @@ def file_hash(path: Path) -> str:
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def load_tables(source: str, cache_dir: Path) -> tuple[dict, dict]:
+def load_tables(source: str, cache_dir: Path, *, financial: bool = False) -> tuple[dict, dict]:
     """Never fall back silently to old data; cache mode verifies file hashes."""
+    queries = dict(QUERIES)
+    if financial:
+        queries["transactions"] = queries["transactions"].replace(
+            "type, operation, k_symbol", "type, operation, k_symbol, amount, balance")
+    cache_version = 2 if financial else CACHE_VERSION
     if source == "cache":
         manifest = json.loads((cache_dir / "manifest.json").read_text(encoding="utf-8"))
-        if manifest["cache_version"] != CACHE_VERSION or manifest["queries"] != QUERIES:
+        if manifest["cache_version"] != cache_version or manifest["queries"] != queries:
             raise ValueError("Cache incompatível; refaça a extração do banco.")
         tables = {}
-        for name in QUERIES:
+        for name in queries:
             path = cache_dir / f"{name}.csv.gz"
             if file_hash(path) != manifest["sha256"][name]:
                 raise ValueError(f"Cache alterado ou incompleto: {path}")
@@ -54,7 +59,7 @@ def load_tables(source: str, cache_dir: Path) -> tuple[dict, dict]:
     try:
         with closing(mysql.connector.connect(**settings)) as connection:
             with closing(connection.cursor()) as cursor:
-                for name, query in QUERIES.items():
+                for name, query in queries.items():
                     print(f"Extraindo {name}...", flush=True)
                     cursor.execute(query)
                     tables[name] = pd.DataFrame.from_records(
@@ -73,10 +78,10 @@ def load_tables(source: str, cache_dir: Path) -> tuple[dict, dict]:
         frame.to_csv(path, index=False, compression={"method": "gzip", "mtime": 0})
         hashes[name] = file_hash(path)
     manifest = {
-        "cache_version": CACHE_VERSION,
+        "cache_version": cache_version,
         "extracted_at_utc": datetime.now(timezone.utc).isoformat(),
         "host": settings["host"], "database": settings["database"],
-        "queries": QUERIES,
+        "queries": queries,
         "rows": {name: len(frame) for name, frame in tables.items()},
         "sha256": hashes,
     }

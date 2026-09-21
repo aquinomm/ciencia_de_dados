@@ -341,37 +341,6 @@ def plot_scope(metrics: pd.DataFrame, episodes: pd.DataFrame, by_date: pd.DataFr
     plt.close(fig)
 
 
-def textual_report(quality: dict, summary: pd.DataFrame, gaps: pd.DataFrame) -> str:
-    sections = ["BERKA: EDA TEMPORAL EXPLORATÓRIA", json.dumps(quality, indent=2, ensure_ascii=False)]
-    for scope in summary.activity_scope.unique():
-        sections.append(f"ATIVIDADE: {scope}")
-        sections.append("Gaps estritamente superiores ao threshold; censura incluída no denominador:")
-        sections.append(gaps.loc[gaps.activity_scope.eq(scope), [
-            "threshold_days", "accounts_with_long_gap", "accounts_reactivated",
-            "episodes", "completed_episodes", "right_censored_episodes",
-            "fixed_followup_episodes", "fixed_followup_returns",
-        ]].to_string(index=False))
-        for calendar in ("all_complete", "common_calendar"):
-            sections.append(f"Targets: {calendar}; prevalência por snapshot (%), não por cliente:")
-            frame = summary.loc[summary.activity_scope.eq(scope) & summary.calendar.eq(calendar)].copy()
-            frame["prevalence_pct"] = frame.prevalence * 100
-            sections.append(frame[["history_days", "min_transactions", "horizon_days",
-                                   "observations", "positives", "positive_accounts", "prevalence_pct",
-                                   "positive_runs"]].to_string(index=False, float_format=lambda x: f"{x:.4f}"))
-    sections.extend([
-        "LIMITAÇÕES: ausência de transações não comprova encerramento. O fim global da base\n"
-        "é um limite administrativo assumido, não prova de captura contínua por conta.",
-        "Retornos até o fim têm follow-up desigual; consulte também as taxas com follow-up fixo\n"
-        "e os denominadores nos CSVs. Gaps encerrados retornam por construção.",
-        "Contas/snapshots e janelas sobrepostas não são independentes. Uma futura avaliação deve\n"
-        "separar contas e tempo, purgar rótulos que atravessem o corte e nunca usar métricas\n"
-        "do período inteiro como preditores. Não dividir linhas aleatoriamente em treino/teste.",
-        "Excluir juros/tarifas não identifica necessariamente ação deliberada do cliente.\n"
-        "Nenhuma configuração foi escolhida para ajustar a proporção de positivos.",
-    ])
-    return "\n\n".join(sections) + "\n"
-
-
 def run_analysis(tables: dict, config: Config, output: Path, provenance: dict) -> dict:
     accounts, transactions, quality = validate_tables(tables)
     start, end = transactions.trans_date.min(), transactions.trans_date.max()
@@ -425,9 +394,6 @@ def run_analysis(tables: dict, config: Config, output: Path, provenance: dict) -
                 "packages": {name: importlib.metadata.version(name) for name in
                              ("numpy", "pandas", "matplotlib", "mysql-connector-python")}}
     (output / "run_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    text = textual_report(quality, summary, gaps)
-    (output / "report.txt").write_text(text, encoding="utf-8")
-    print(text)
     print(f"Outputs: {output.resolve()}")
     return manifest
 

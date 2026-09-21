@@ -1,6 +1,8 @@
 # Berka: evidências exploratórias de comportamento e inatividade
 
-Execução de 20/09/2026. A escolha do dataset e do problema permanece em aberto. Estes resultados avaliam uma proxy operacional e não identificam encerramento comprovado de contas ou da relação bancária.
+Execução de 20/09/2026. **A investigação posterior encerrou dormancy/churn no Berka como alvo preditivo principal na branch `berka-temporal`, por suporte experimental insuficiente.** Isso não invalida o dataset; sua permanência e a escolha de outro alvo ainda não são decisões finais do projeto. Consulte o [fechamento da branch](../README.md#conclusão-da-branch-e-direção-ainda-em-aberto).
+
+Esta página preserva as evidências e perguntas da etapa exploratória, anteriores ao fechamento. Estes resultados avaliam uma proxy operacional e não identificam encerramento comprovado de contas ou da relação bancária. Os experimentos posteriores estão em [previsão de inatividade](berka_inactivity_prediction.md) e [transição ativo → inativo](berka_activity_transition.md). As interpretações antes repetidas por `textual_report()` foram centralizadas nesta documentação; a EDA continua gerando tabelas, gráficos e manifesto, sem relatório narrativo embutido no código.
 
 ## Reprodução e escopo
 
